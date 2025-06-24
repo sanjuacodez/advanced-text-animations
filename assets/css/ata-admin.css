@@ -1,0 +1,59 @@
+.ata-engine-selector {
+    max-width: 600px;
+    margin: 20px 0;
+}
+
+.ata-engine-toggle {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.ata-engine-toggle input[type="radio"] {
+    display: none;
+}
+
+.ata-engine-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    background: #f0f0f1;
+    border: 2px solid #c3c4c7;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 60px;
+    font-size: 20px;
+}
+
+.ata-engine-button .dashicons {
+    margin-right: 8px;
+}
+
+.ata-engine-toggle input[type="radio"]:checked + .ata-engine-button {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+.ata-engine-info {
+    display: none;
+    padding: 15px;
+    background: #fff;
+    border-left: 4px solid #2271b1;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.ata-engine-info.active {
+    display: block;
+}
+
+.ata-engine-css {
+    border-left-color: #2271b1;
+}
+
+.ata-engine-gsap {
+    border-left-color: #00a32a;
+}

@@ -1,0 +1,115 @@
+/* CSS-based animations */
+.ata-animated-text[data-engine="css"] {
+    /* Add CSS animations here */
+}
+
+/* 1. Infinite Bounce */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+.bounce-text {
+  display: inline-block;
+  animation: bounce 1.5s ease infinite;
+}
+
+/* 2. Fade In/Out */
+@keyframes fade {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+.fade-text {
+  animation: fade 3s ease-in-out infinite;
+}
+
+/* 3. Wave Effect (improved for animation-delay and duration) */
+@keyframes wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.wave-text {
+  display: inline-block;
+  animation-name: wave;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.wave-text:nth-child(2n) {
+  animation-delay: 0s;
+}
+.wave-text:nth-child(2n+1) {
+  animation-delay: 0.5s;
+}
+
+/* 4. Rotating Characters */
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.rotate-text {
+  display: inline-block;
+  animation: rotate 3s linear infinite;
+}
+
+/* 5. Pulse */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.pulse-text {
+  display: inline-block;
+  animation: pulse 2s ease infinite;
+}
+
+/* 6. Glitch Effect */
+@keyframes glitch {
+  0%, 100% { text-shadow: 1px 0px 0px red, -1px 0px 0px cyan; }
+  25% { text-shadow: 2px 0px 0px red, -2px 0px 0px cyan; }
+  50% { text-shadow: -1px 0px 0px red, 1px 0px 0px cyan; }
+  75% { text-shadow: -2px 0px 0px red, 2px 0px 0px cyan; }
+}
+.glitch-text {
+  animation: glitch 2s ease infinite;
+}
+
+/* 7. Rainbow Color Cycle */
+@keyframes rainbow {
+  0% { color: #ff0000; }
+  16% { color: #8000ff; }
+  33% { color: #00ff00; }
+  50% { color: #ffff00; }
+  66% { color: #ff8000; }
+  83% { color: #0000ff; }
+  100% { color: #ff0080; }
+}
+.rainbow-text {
+  animation: rainbow 5s linear infinite;
+}
+
+/* 8. Shake */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+.shake-text {
+  display: inline-block;
+  animation: shake 0.5s ease infinite;
+}
+
+/* 9. Slide In/Out */
+@keyframes slide {
+  0%, 100% { transform: translateX(-100%); opacity: 0; }
+  50% { transform: translateX(0); opacity: 1; }
+}
+.slide-text {
+  animation: slide 3s ease-in-out infinite;
+}
+
+/* 10. Blinking */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink-text {
+  animation: blink 1s step-end infinite;
+}

@@ -1,0 +1,20 @@
+/* Core styles for animation containers */
+.ata-animated-text {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ata-word-wrap,
+.ata-letter-wrap,
+.ata-line-wrap {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+}
+
+.ata-word,
+.ata-letter,
+.ata-line {
+    display: inline-block;
+    white-space: nowrap;
+}
