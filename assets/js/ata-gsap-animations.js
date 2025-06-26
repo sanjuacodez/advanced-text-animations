@@ -21,22 +21,42 @@
             var animType = $el.data('ata-anim-type');
             var animMode = $el.data('ata-anim-mode');
             var animDelay = parseFloat($el.data('ata-anim-delay')) || 0.1;
-            var split = new SplitText($el[0], {
-                type: animMode // 'chars', 'words', 'lines'
-            });
+            // Map animation mode to SplitText type and target
+            var splitType = '';
             var targets = [];
-            if (animMode === 'character' || animMode === 'chars') targets = split.chars;
-            else if (animMode === 'words') targets = split.words;
-            else if (animMode === 'lines') targets = split.lines;
+            if (animMode === 'character') {
+                splitType = 'chars';
+            } else if (animMode === 'words') {
+                splitType = 'words';
+            } else if (animMode === 'lines') {
+                splitType = 'lines';
+            } else {
+                splitType = animMode;
+            }
+            var split = new SplitText($el[0], { type: splitType, tag: 'span' });
+            if (splitType === 'chars') targets = split.chars;
+            else if (splitType === 'words') targets = split.words;
+            else if (splitType === 'lines') targets = split.lines;
             else targets = [$el[0]];
 
-            // Common GSAP options
-            var gsapOpts = {
-                repeat: -1,
-                yoyo: true,
-                stagger: animDelay,
-                delay: 0 // can be set per target if needed
-            };
+            // Read per-widget GSAP options from data attributes
+            var gsapStagger = $el.data('ata-anim-stagger') === 'yes';
+            var gsapYoyo = $el.data('ata-anim-yoyo') === 'yes';
+            var gsapRepeat = typeof $el.data('ata-anim-repeat') !== 'undefined' ? parseInt($el.data('ata-anim-repeat')) : -1;
+
+            // Only use these options for supported animation types
+            var useGsapOpts = [
+                'infinite-bounce', 'infinite-wave', 'rotate', 'pulse', 'glitch', 'shake', 'sliding-entrance'
+            ];
+            var gsapOpts = {};
+            if (useGsapOpts.includes(animType)) {
+                gsapOpts = {
+                    repeat: gsapRepeat,
+                    yoyo: gsapYoyo,
+                    stagger: gsapStagger ? animDelay : 0,
+                    delay: 0
+                };
+            }
 
             switch (animType) {
                 case 'infinite-bounce':
@@ -52,8 +72,9 @@
                         gsap.to($el[0], {
                             duration: 2,
                             text: { value: $el.text(), delimiter: '' },
-                            repeat: -1,
+                            repeat: gsapRepeat,
                             repeatDelay: 1,
+                            yoyo: gsapYoyo,
                             ease: 'none',
                             delay: animDelay
                         });
@@ -70,7 +91,17 @@
                     }
                     break;
                 case 'scramble':
-                    if (typeof ScrambleTextPlugin !== 'undefined' && animMode === 'character') {
+                    if (typeof window.ScrambleTextPlugin !== 'undefined' && splitType === 'chars') {
+                        targets.forEach(function(target) {
+                            gsap.to(target, {
+                                duration: 2,
+                                scrambleText: { text: target.textContent, chars: '0123456789', revealDelay: 0.5 },
+                                repeat: -1,
+                                yoyo: true,
+                                delay: animDelay
+                            });
+                        });
+                    } else if (typeof window.ScrambleTextPlugin !== 'undefined') {
                         gsap.to($el[0], {
                             duration: 2,
                             scrambleText: { text: $el.text(), chars: '0123456789', revealDelay: 0.5 },
@@ -103,10 +134,10 @@
                         x: function() { return Math.random() * 5 - 2.5; },
                         y: function() { return Math.random() * 5 - 2.5; },
                         duration: 0.1,
-                        repeat: -1,
-                        yoyo: true,
+                        repeat: gsapRepeat,
+                        yoyo: gsapYoyo,
                         ease: 'none',
-                        stagger: animDelay,
+                        stagger: gsapStagger ? animDelay : 0,
                         delay: 0
                     });
                     break;
@@ -121,10 +152,16 @@
                             $('.ata-anim-gsap[data-ata-anim-type="rainbow"]').each(function() {
                                 var $rainbowEl = $(this);
                                 var rainbowMode = $rainbowEl.data('ata-anim-mode');
-                                var rainbowSplit = new SplitText($rainbowEl[0], { type: rainbowMode });
-                                var rainbowTargets = (rainbowMode === 'character' || rainbowMode === 'chars') ? rainbowSplit.chars : (rainbowMode === 'words') ? rainbowSplit.words : (rainbowMode === 'lines') ? rainbowSplit.lines : [$rainbowEl[0]];
+                                var rainbowSplitType = (rainbowMode === 'character') ? 'chars' : rainbowMode;
+                                // Only split once per element, cache result
+                                if (!$rainbowEl.data('ata-rainbow-split')) {
+                                    $rainbowEl.data('ata-rainbow-split', new SplitText($rainbowEl[0], { type: rainbowSplitType }));
+                                }
+                                var rainbowSplit = $rainbowEl.data('ata-rainbow-split');
+                                var rainbowTargets = (rainbowSplitType === 'chars') ? rainbowSplit.chars : (rainbowSplitType === 'words') ? rainbowSplit.words : (rainbowSplitType === 'lines') ? rainbowSplit.lines : [$rainbowEl[0]];
+                                var localPhaseStep = 360 / rainbowTargets.length;
                                 rainbowTargets.forEach(function(target, i) {
-                                    var phase = (i * phaseStep) + (parseFloat($rainbowEl.data('ata-anim-delay')) || 0) * 360;
+                                    var phase = (i * localPhaseStep) + (parseFloat($rainbowEl.data('ata-anim-delay')) || 0) * 360;
                                     target.style.color = 'hsl(' + ((baseHue + phase) % 360) + ', 100%, 50%)';
                                 });
                             });
@@ -136,11 +173,8 @@
                         gsap.to(targets, {
                             x: function() { return Math.random() * 10 - 5; },
                             duration: 0.2,
-                            repeat: -1,
-                            yoyo: true,
+                            ...gsapOpts,
                             ease: 'sine.inOut',
-                            stagger: animDelay,
-                            delay: 0
                         });
                     }
                     break;
@@ -157,8 +191,32 @@
         });
     }
 
-    $(document).ready(function() {
-        gsapReady(runGSAPAnimations);
-    });
+    // Debug: Log GSAP and ScrambleTextPlugin presence
+    if (window.gsap) {
+        console.log('[ATA] GSAP version:', window.gsap.version);
+    } else {
+        console.warn('[ATA] GSAP is not loaded!');
+    }
+    if (window.ScrambleTextPlugin) {
+        console.log('[ATA] ScrambleTextPlugin is loaded:', typeof window.ScrambleTextPlugin);
+        if (window.gsap) {
+            window.gsap.registerPlugin(window.ScrambleTextPlugin);
+            console.log('[ATA] ScrambleTextPlugin registered with GSAP.');
+        }
+    } else {
+        console.warn('[ATA] ScrambleTextPlugin is NOT loaded!');
+    }
+
+    // Wait for fonts to be loaded before running GSAP animations
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() {
+            gsapReady(runGSAPAnimations);
+        });
+    } else {
+        // Fallback for older browsers
+        $(document).ready(function() {
+            gsapReady(runGSAPAnimations);
+        });
+    }
 
 })(jQuery);

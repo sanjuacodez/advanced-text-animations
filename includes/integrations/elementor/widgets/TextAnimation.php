@@ -236,6 +236,9 @@ class TextAnimation extends Widget_Base {
                 'default' => 'yes',
                 'condition' => [
                     'animation_engine' => 'gsap',
+                    'animation_type_gsap_character!' => ['rainbow', 'scramble'],
+                    'animation_type_gsap_words!' => ['rainbow', 'scramble'],
+                    'animation_type_gsap_lines!' => ['rainbow', 'scramble'],
                 ],
                 'description' => __('Enable staggered animation for characters/words/lines.', 'advanced-text-animations'),
             ]
@@ -251,6 +254,9 @@ class TextAnimation extends Widget_Base {
                 'default' => 'yes',
                 'condition' => [
                     'animation_engine' => 'gsap',
+                    'animation_type_gsap_character!' => ['rainbow', 'scramble'],
+                    'animation_type_gsap_words!' => ['rainbow', 'scramble'],
+                    'animation_type_gsap_lines!' => ['rainbow', 'scramble'],
                 ],
                 'description' => __('Enable yoyo (back-and-forth) animation.', 'advanced-text-animations'),
             ]
@@ -265,6 +271,9 @@ class TextAnimation extends Widget_Base {
                 'step' => 1,
                 'condition' => [
                     'animation_engine' => 'gsap',
+                    'animation_type_gsap_character!' => ['rainbow', 'scramble'],
+                    'animation_type_gsap_words!' => ['rainbow', 'scramble'],
+                    'animation_type_gsap_lines!' => ['rainbow', 'scramble'],
                 ],
                 'description' => __('Number of times to repeat the animation. -1 = infinite.', 'advanced-text-animations'),
             ]

@@ -18,3 +18,8 @@
     display: inline-block;
     white-space: nowrap;
 }
+
+/* Ensure all SplitText-generated spans are inline-block for GSAP transforms */
+.ata-animated-text span {
+    display: inline-block;
+}
