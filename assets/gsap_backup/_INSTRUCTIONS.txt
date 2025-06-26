@@ -1,0 +1,20 @@
+Move the following files from assets/gsap to this backup folder to keep only the required GSAP files for your plugin:
+
+- CSSRulePlugin.min.js
+- CustomEase.min.js
+- Draggable.min.js
+- EaselPlugin.min.js
+- EasePack.min.js
+- Flip.min.js
+- MotionPathPlugin.min.js
+- PixiPlugin.min.js
+- ScrollToPlugin.min.js
+- ScrollTrigger.min.js
+
+Keep only:
+- gsap.min.js
+- SplitText.min.js
+- TextPlugin.min.js
+- ScrambleTextPlugin.min.js
+
+This keeps your plugin folder clean and minimal.

@@ -3,6 +3,10 @@ namespace AdvancedTextAnimations\Integrations\Elementor\Widgets;
 
 use Elementor\Widget_Base;
 use Elementor\Controls_Manager;
+use Elementor\Group_Control_Typography;
+use Elementor\Group_Control_Text_Shadow;
+use Elementor\Group_Control_Text_Stroke;
+use Elementor\Group_Control_Text_Align;
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
@@ -298,6 +302,117 @@ class TextAnimation extends Widget_Base {
                 ]),
             ]
         );
+
+        $this->end_controls_section();
+
+        // --- STYLE TAB ---
+        $this->start_controls_section(
+            'style_section',
+            [
+                'label' => __('Text', 'advanced-text-animations'),
+                'tab' => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Typography::get_type(),
+            [
+                'name' => 'typography',
+                'selector' => '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div',
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Text_Shadow::get_type(),
+            [
+                'name' => 'text_shadow',
+                'selector' => '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div',
+            ]
+        );
+
+        $this->add_group_control(
+            Group_Control_Text_Stroke::get_type(),
+            [
+                'name' => 'text_stroke',
+                'selector' => '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div',
+            ]
+        );
+
+        $this->add_control(
+            'text_color',
+            [
+                'label' => __('Text Color', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'text_align',
+            [
+                'label' => __('Alignment', 'advanced-text-animations'),
+                'type' => Controls_Manager::CHOOSE,
+                'options' => [
+                    'left' => [
+                        'title' => __('Left', 'advanced-text-animations'),
+                        'icon' => 'eicon-text-align-left',
+                    ],
+                    'center' => [
+                        'title' => __('Center', 'advanced-text-animations'),
+                        'icon' => 'eicon-text-align-center',
+                    ],
+                    'right' => [
+                        'title' => __('Right', 'advanced-text-animations'),
+                        'icon' => 'eicon-text-align-right',
+                    ],
+                ],
+                'default' => 'left',
+                'selectors' => [
+                    '{{WRAPPER}} .ata-animated-text' => 'text-align: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->start_controls_tabs('tabs_text_style');
+
+        $this->start_controls_tab(
+            'tab_text_normal',
+            [
+                'label' => __('Normal', 'advanced-text-animations'),
+            ]
+        );
+        $this->add_control(
+            'text_color_normal',
+            [
+                'label' => __('Text Color', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+        $this->end_controls_tab();
+
+        $this->start_controls_tab(
+            'tab_text_hover',
+            [
+                'label' => __('Hover', 'advanced-text-animations'),
+            ]
+        );
+        $this->add_control(
+            'text_color_hover',
+            [
+                'label' => __('Text Color', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .ata-animated-text:hover, {{WRAPPER}} .ata-animated-text:hover span, {{WRAPPER}} .ata-animated-text:hover div' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+        $this->end_controls_tab();
+        $this->end_controls_tabs();
 
         $this->end_controls_section();
     }

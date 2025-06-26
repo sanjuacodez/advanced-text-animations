@@ -1,0 +1,1 @@
+All GSAP plugin files have been moved here for backup. Only gsap.min.js, SplitText.min.js, TextPlugin.min.js, and ScrambleTextPlugin.min.js remain in the main folder.
