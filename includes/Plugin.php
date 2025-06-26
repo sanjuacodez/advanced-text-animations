@@ -50,7 +50,14 @@ class Plugin {
         // Guarantee jQuery is available everywhere
         add_action('wp_enqueue_scripts', function() { wp_enqueue_script('jquery'); }, 0);
         add_action('admin_enqueue_scripts', function() { wp_enqueue_script('jquery'); }, 0);
+        add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_scripts']);
+        add_action('elementor/preview/enqueue_scripts', [$this, 'enqueue_scripts']);
+        add_action('elementor/preview/enqueue_scripts', [$this, 'enqueue_preview_debug']);
         add_action('elementor/editor/after_enqueue_scripts', function() { wp_enqueue_script('jquery'); }, 0);
+    }
+
+    public function enqueue_preview_debug() {
+        wp_add_inline_script('ata-gsap-animations', "console.log('[ATA] Animation JS running in Elementor PREVIEW iframe');");
     }
 
     /**
