@@ -30,15 +30,21 @@
             else if (animMode === 'lines') targets = split.lines;
             else targets = [$el[0]];
 
+            // Common GSAP options
+            var gsapOpts = {
+                repeat: -1,
+                yoyo: true,
+                stagger: animDelay,
+                delay: 0 // can be set per target if needed
+            };
+
             switch (animType) {
                 case 'infinite-bounce':
                     gsap.to(targets, {
                         y: -15,
                         duration: 1,
-                        repeat: -1,
-                        yoyo: true,
+                        ...gsapOpts,
                         ease: 'sine.inOut',
-                        stagger: animDelay
                     });
                     break;
                 case 'typewriter':
@@ -48,7 +54,8 @@
                             text: { value: $el.text(), delimiter: '' },
                             repeat: -1,
                             repeatDelay: 1,
-                            ease: 'none'
+                            ease: 'none',
+                            delay: animDelay
                         });
                     }
                     break;
@@ -57,10 +64,8 @@
                         gsap.from(targets, {
                             y: 20,
                             duration: 0.5,
-                            repeat: -1,
-                            yoyo: true,
+                            ...gsapOpts,
                             ease: 'sine.inOut',
-                            stagger: animDelay
                         });
                     }
                     break;
@@ -70,7 +75,8 @@
                             duration: 2,
                             scrambleText: { text: $el.text(), chars: '0123456789', revealDelay: 0.5 },
                             repeat: -1,
-                            yoyo: true
+                            yoyo: true,
+                            delay: animDelay
                         });
                     }
                     break;
@@ -79,8 +85,8 @@
                         gsap.to(targets, {
                             rotation: 360,
                             duration: 2,
-                            repeat: -1,
-                            ease: 'none'
+                            ...gsapOpts,
+                            ease: 'none',
                         });
                     }
                     break;
@@ -88,10 +94,8 @@
                     gsap.to(targets, {
                         scale: 1.1,
                         duration: 1,
-                        repeat: -1,
-                        yoyo: true,
+                        ...gsapOpts,
                         ease: 'sine.inOut',
-                        stagger: animDelay
                     });
                     break;
                 case 'glitch':
@@ -100,23 +104,32 @@
                         y: function() { return Math.random() * 5 - 2.5; },
                         duration: 0.1,
                         repeat: -1,
-                        ease: 'none'
+                        yoyo: true,
+                        ease: 'none',
+                        stagger: animDelay,
+                        delay: 0
                     });
                     break;
                 case 'rainbow':
-                    gsap.to(targets, {
-                        color: '#ff0000',
-                        duration: 2,
-                        repeat: -1,
-                        yoyo: true,
-                        stagger: animDelay,
-                        modifiers: {
-                            color: function(value, target, element, index) {
-                                var hue = (Date.now() / 10 + index * 40) % 360;
-                                return 'hsl(' + hue + ', 100%, 50%)';
-                            }
-                        }
-                    });
+                    // Use a single GSAP ticker for all targets for synchronized color cycling
+                    var baseHue = 0;
+                    var phaseStep = 360 / targets.length;
+                    if (!window._ataRainbowTicker) {
+                        window._ataRainbowTicker = true;
+                        gsap.ticker.add(function() {
+                            baseHue = (baseHue + 1) % 360;
+                            $('.ata-anim-gsap[data-ata-anim-type="rainbow"]').each(function() {
+                                var $rainbowEl = $(this);
+                                var rainbowMode = $rainbowEl.data('ata-anim-mode');
+                                var rainbowSplit = new SplitText($rainbowEl[0], { type: rainbowMode });
+                                var rainbowTargets = (rainbowMode === 'character' || rainbowMode === 'chars') ? rainbowSplit.chars : (rainbowMode === 'words') ? rainbowSplit.words : (rainbowMode === 'lines') ? rainbowSplit.lines : [$rainbowEl[0]];
+                                rainbowTargets.forEach(function(target, i) {
+                                    var phase = (i * phaseStep) + (parseFloat($rainbowEl.data('ata-anim-delay')) || 0) * 360;
+                                    target.style.color = 'hsl(' + ((baseHue + phase) % 360) + ', 100%, 50%)';
+                                });
+                            });
+                        });
+                    }
                     break;
                 case 'shake':
                     if (animMode === 'character' || animMode === 'words') {
@@ -126,7 +139,8 @@
                             repeat: -1,
                             yoyo: true,
                             ease: 'sine.inOut',
-                            stagger: 0.05
+                            stagger: animDelay,
+                            delay: 0
                         });
                     }
                     break;
@@ -135,10 +149,8 @@
                         x: 100,
                         opacity: 0,
                         duration: 1,
-                        repeat: -1,
-                        yoyo: true,
+                        ...gsapOpts,
                         ease: 'sine.inOut',
-                        stagger: animDelay
                     });
                     break;
             }

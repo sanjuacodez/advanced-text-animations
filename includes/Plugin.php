@@ -45,8 +45,8 @@ class Plugin {
     private function init_hooks() {
         add_action('init', [$this, 'load_textdomain']);
         add_action('admin_init', [$this, 'init_admin']);
-        $this->animation_engine = get_option('ata_animation_engine', 'css');
         add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
         // Guarantee jQuery is available everywhere
         add_action('wp_enqueue_scripts', function() { wp_enqueue_script('jquery'); }, 0);
         add_action('admin_enqueue_scripts', function() { wp_enqueue_script('jquery'); }, 0);
@@ -96,62 +96,47 @@ class Plugin {
             [],
             ATA_VERSION
         );
-
-        // Enqueue animation engine specific assets
-        if ($this->animation_engine === 'gsap') {
-            // Enqueue local GSAP and plugins with correct versioning
-            wp_enqueue_script(
-                'gsap',
-                ATA_URL . 'assets/gsap/gsap.min.js',
-                [],
-                ATA_VERSION,
-                true // Load in footer
-            );
-            wp_enqueue_script(
-                'gsap-text',
-                ATA_URL . 'assets/gsap/TextPlugin.min.js',
-                ['gsap'],
-                ATA_VERSION,
-                true // Load in footer
-            );
-            wp_enqueue_script(
-                'gsap-scramble',
-                ATA_URL . 'assets/gsap/ScrambleTextPlugin.min.js',
-                ['gsap'],
-                ATA_VERSION,
-                true // Load in footer
-            );
-            wp_enqueue_script(
-                'gsap-split',
-                ATA_URL . 'assets/gsap/SplitText.min.js',
-                ['gsap'],
-                ATA_VERSION,
-                true // Load in footer
-            );
-            wp_enqueue_script(
-                'ata-gsap-animations',
-                ATA_URL . 'assets/js/ata-gsap-animations.js',
-                ['jquery', 'gsap', 'gsap-text', 'gsap-scramble', 'gsap-split'],
-                ATA_VERSION,
-                true // Load in footer
-            );
-        } else {
-            wp_enqueue_style(
-                'ata-css-animations',
-                ATA_URL . 'assets/css/ata-css-animations.css',
-                [],
-                ATA_VERSION
-            );
-        }
-        // Always enqueue admin/editor scripts in footer
-        if (is_admin() || defined('ELEMENTOR_VERSION')) {
-            wp_enqueue_script(
-                'ata-elementor-anim-desc',
-                ATA_URL . 'assets/js/elementor-anim-desc.js',
-                [],
-                ATA_VERSION,
-                true // Load in footer
-            );
-        }
+        // Always enqueue both CSS and GSAP assets for widget-level control
+        wp_enqueue_style(
+            'ata-css-animations',
+            ATA_URL . 'assets/css/ata-css-animations.css',
+            [],
+            ATA_VERSION
+        );
+        wp_enqueue_script(
+            'gsap',
+            ATA_URL . 'assets/gsap/gsap.min.js',
+            [],
+            ATA_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'gsap-text',
+            ATA_URL . 'assets/gsap/TextPlugin.min.js',
+            ['gsap'],
+            ATA_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'gsap-scramble',
+            ATA_URL . 'assets/gsap/ScrambleTextPlugin.min.js',
+            ['gsap'],
+            ATA_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'gsap-split',
+            ATA_URL . 'assets/gsap/SplitText.min.js',
+            ['gsap'],
+            ATA_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'ata-gsap-animations',
+            ATA_URL . 'assets/js/ata-gsap-animations.js',
+            ['jquery', 'gsap', 'gsap-text', 'gsap-scramble', 'gsap-split'],
+            ATA_VERSION,
+            true
+        );
     }
 }
