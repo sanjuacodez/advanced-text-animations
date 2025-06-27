@@ -139,9 +139,16 @@ class Plugin {
             true
         );
         wp_enqueue_script(
+            'gsap-scrolltrigger',
+            ATA_URL . 'assets/gsap/ScrollTrigger.min.js',
+            ['gsap'],
+            ATA_VERSION,
+            true
+        );
+        wp_enqueue_script(
             'ata-gsap-animations',
             ATA_URL . 'assets/js/ata-gsap-animations.js',
-            ['jquery', 'gsap', 'gsap-text', 'gsap-scramble', 'gsap-split'],
+            ['jquery', 'gsap', 'gsap-text', 'gsap-scramble', 'gsap-split', 'gsap-scrolltrigger'],
             ATA_VERSION,
             true
         );

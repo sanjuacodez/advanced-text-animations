@@ -340,6 +340,8 @@ class TextAnimation extends Widget_Base {
                     'slide-text' => __('Characters/words/lines slide in and out from the left, fading as they go.', 'advanced-text-animations'),
                     'blink-text' => __('Characters/words/lines blink on and off, like a cursor.', 'advanced-text-animations'),
                     'reveal-gsap' => __('Text reveal effect inspired by GSAP CodePen demo.', 'advanced-text-animations'),
+                    'running-text' => __('Running text/marquee effect with dual color, inspired by GSAP demo.', 'advanced-text-animations'),
+                    'scroll-reveal' => __('Scroll-triggered text reveal with background color, inspired by GSAP demo.', 'advanced-text-animations'),
                 ]),
             ]
         );
@@ -385,7 +387,67 @@ class TextAnimation extends Widget_Base {
                 'label' => __('Text Color', 'advanced-text-animations'),
                 'type' => Controls_Manager::COLOR,
                 'selectors' => [
-                    '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div' => 'color: {{VALUE}};',
+                    // Only apply to the wrapper, not inner spans/divs
+                    '{{WRAPPER}} .ata-animated-text' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+        // Add Text Initial Color (Scroll Reveal) immediately after Text Color
+        $this->add_control(
+            'scroll_reveal_initial_color',
+            [
+                'label' => __('Text Initial Color (Scroll Reveal)', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#aaa',
+                // Show if any GSAP animation type is scroll-reveal, regardless of mode
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    // Any of the three animation type controls set to scroll-reveal
+                    [ 'animation_type_gsap_character' => 'scroll-reveal' ],
+                    [ 'animation_type_gsap_words' => 'scroll-reveal' ],
+                    [ 'animation_type_gsap_lines' => 'scroll-reveal' ],
+                ],
+            ]
+        );
+        // Show for GSAP scroll-reveal in character mode
+        $this->add_control(
+            'scroll_reveal_initial_color_character',
+            [
+                'label' => __('Text Initial Color (Scroll Reveal)', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#aaa',
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    'animation_mode' => 'character',
+                    'animation_type_gsap_character' => 'scroll-reveal',
+                ],
+            ]
+        );
+        // Show for GSAP scroll-reveal in words mode
+        $this->add_control(
+            'scroll_reveal_initial_color_words',
+            [
+                'label' => __('Text Initial Color (Scroll Reveal)', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#aaa',
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    'animation_mode' => 'words',
+                    'animation_type_gsap_words' => 'scroll-reveal',
+                ],
+            ]
+        );
+        // Show for GSAP scroll-reveal in lines mode
+        $this->add_control(
+            'scroll_reveal_initial_color_lines',
+            [
+                'label' => __('Text Initial Color (Scroll Reveal)', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#aaa',
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    'animation_mode' => 'lines',
+                    'animation_type_gsap_lines' => 'scroll-reveal',
                 ],
             ]
         );
@@ -415,45 +477,6 @@ class TextAnimation extends Widget_Base {
                 ],
             ]
         );
-
-        $this->start_controls_tabs('tabs_text_style');
-
-        $this->start_controls_tab(
-            'tab_text_normal',
-            [
-                'label' => __('Normal', 'advanced-text-animations'),
-            ]
-        );
-        $this->add_control(
-            'text_color_normal',
-            [
-                'label' => __('Text Color', 'advanced-text-animations'),
-                'type' => Controls_Manager::COLOR,
-                'selectors' => [
-                    '{{WRAPPER}} .ata-animated-text, {{WRAPPER}} .ata-animated-text span, {{WRAPPER}} .ata-animated-text div' => 'color: {{VALUE}};',
-                ],
-            ]
-        );
-        $this->end_controls_tab();
-
-        $this->start_controls_tab(
-            'tab_text_hover',
-            [
-                'label' => __('Hover', 'advanced-text-animations'),
-            ]
-        );
-        $this->add_control(
-            'text_color_hover',
-            [
-                'label' => __('Text Color', 'advanced-text-animations'),
-                'type' => Controls_Manager::COLOR,
-                'selectors' => [
-                    '{{WRAPPER}} .ata-animated-text:hover, {{WRAPPER}} .ata-animated-text:hover span, {{WRAPPER}} .ata-animated-text:hover div' => 'color: {{VALUE}};',
-                ],
-            ]
-        );
-        $this->end_controls_tab();
-        $this->end_controls_tabs();
 
         $this->end_controls_section();
     }
@@ -516,6 +539,7 @@ class TextAnimation extends Widget_Base {
                 'shake' => __('Shake', 'advanced-text-animations'),
                 'sliding-entrance' => __('Sliding Entrance', 'advanced-text-animations'),
                 'reveal-gsap' => __('Text Reveal', 'advanced-text-animations'),
+                'scroll-reveal' => __('Scroll Reveal', 'advanced-text-animations'),
             ],
             'words' => [
                 'infinite-bounce' => __('Infinite Bounce', 'advanced-text-animations'),
@@ -526,6 +550,7 @@ class TextAnimation extends Widget_Base {
                 'shake' => __('Shake', 'advanced-text-animations'),
                 'sliding-entrance' => __('Sliding Entrance', 'advanced-text-animations'),
                 'reveal-gsap' => __('Text Reveal', 'advanced-text-animations'),
+                'scroll-reveal' => __('Scroll Reveal', 'advanced-text-animations'),
             ],
             'lines' => [
                 'infinite-bounce' => __('Infinite Bounce', 'advanced-text-animations'),
@@ -534,6 +559,7 @@ class TextAnimation extends Widget_Base {
                 'rainbow' => __('Rainbow Color Cycle', 'advanced-text-animations'),
                 'sliding-entrance' => __('Sliding Entrance', 'advanced-text-animations'),
                 'reveal-gsap' => __('Text Reveal', 'advanced-text-animations'),
+                'scroll-reveal' => __('Scroll Reveal', 'advanced-text-animations'),
             ],
         ];
         return $options[$mode] ?? [];
@@ -552,6 +578,8 @@ class TextAnimation extends Widget_Base {
             'slide-text' => __('Characters/words/lines slide in and out from the left, fading as they go.', 'advanced-text-animations'),
             'blink-text' => __('Characters/words/lines blink on and off, like a cursor.', 'advanced-text-animations'),
             'reveal-gsap' => __('Text reveal effect inspired by GSAP CodePen demo.', 'advanced-text-animations'),
+            'running-text' => __('Running text/marquee effect with dual color, inspired by GSAP demo.', 'advanced-text-animations'),
+            'scroll-reveal' => __('Scroll-triggered text reveal with background color, inspired by GSAP demo.', 'advanced-text-animations'),
         ];
         return $descriptions[$type] ?? '';
     }
@@ -567,8 +595,13 @@ class TextAnimation extends Widget_Base {
         $tag = $settings['wrapper_tag'] ?? 'div';
         $delay_ms = isset($settings['animation_delay']) ? intval($settings['animation_delay']) : 0;
         $delay_s = $delay_ms > 0 ? ($delay_ms / 1000) : 0;
+        $is_scroll_reveal = ($engine === 'gsap' && $animation_type === 'scroll-reveal');
+        $wrapper_classes = 'ata-animated-text' . ($engine === 'gsap' ? ' ata-anim-gsap' : '');
+        if ($is_scroll_reveal) {
+            $wrapper_classes .= ' ata-scroll-reveal';
+        }
         $this->add_render_attribute('wrapper', [
-            'class' => 'ata-animated-text' . ($engine === 'gsap' ? ' ata-anim-gsap' : ''),
+            'class' => $wrapper_classes,
             'data-animation' => $animation_type,
             'data-engine' => $engine,
             'data-mode' => $mode,
@@ -583,46 +616,59 @@ class TextAnimation extends Widget_Base {
                 ($engine === 'gsap' && $mode === 'words' && !empty($settings['reveal_bg_color_words']) ? $settings['reveal_bg_color_words'] :
                 ($engine === 'gsap' && $mode === 'lines' && !empty($settings['reveal_bg_color_lines']) ? $settings['reveal_bg_color_lines'] : ''))
             ),
+            'data-running-bg-color' => (
+                $engine === 'gsap' && $mode === 'character' && !empty($settings['running_bg_color']) ? $settings['running_bg_color'] :
+                ($engine === 'gsap' && $mode === 'words' && !empty($settings['running_bg_color_words']) ? $settings['running_bg_color_words'] :
+                ($engine === 'gsap' && $mode === 'lines' && !empty($settings['running_bg_color_lines']) ? $settings['running_bg_color_lines'] : ''))
+            ),
+            'data-scroll-reveal-bg-color' => (
+                $engine === 'gsap' && $mode === 'character' && !empty($settings['scroll_reveal_bg_color']) ? $settings['scroll_reveal_bg_color'] :
+                ($engine === 'gsap' && $mode === 'words' && !empty($settings['scroll_reveal_bg_color_words']) ? $settings['scroll_reveal_bg_color_words'] :
+                ($engine === 'gsap' && $mode === 'lines' && !empty($settings['scroll_reveal_bg_color_lines']) ? $settings['scroll_reveal_bg_color_lines'] : ''))
+            ),
+            'data-scroll-reveal-initial-color' => isset($settings['scroll_reveal_initial_color']) && $settings['scroll_reveal_initial_color'] !== '' ? $settings['scroll_reveal_initial_color'] : '#aaa',
+            'data-scroll-reveal-text-color' => isset($settings['text_color']) && $settings['text_color'] !== '' ? $settings['text_color'] : '#222',
         ]);
         $text = $settings['text'];
         $output = '';
-        if ($engine === 'css') {
+        // Output a style block for initial color if scroll-reveal
+        if ($is_scroll_reveal) {
+            $initial_color = '';
+            if ($mode === 'character') {
+                $initial_color = $settings['scroll_reveal_initial_color_character'] ?? '#aaa';
+            } elseif ($mode === 'words') {
+                $initial_color = $settings['scroll_reveal_initial_color_words'] ?? '#aaa';
+            } elseif ($mode === 'lines') {
+                $initial_color = $settings['scroll_reveal_initial_color_lines'] ?? '#aaa';
+            }
+        }
+        if ($engine === 'css' || $is_scroll_reveal) {
             if ($mode === 'character') {
                 $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
                 foreach ($chars as $i => $char) {
-                    if ($animation_type === 'wave-text') {
-                        $style = $delay_s > 0 ? 'animation-duration:' . esc_attr($delay_s) . 's' : '';
-                        $output .= '<span class="' . esc_attr($animation_type) . '" style="' . $style . '">' . esc_html($char) . '</span>';
-                    } else {
-                        $max_delay = $delay_s > 0 ? $delay_s : 1.0;
-                        $delay = number_format(mt_rand(0, 1000) / 1000 * $max_delay, 2);
-                        $output .= '<span class="' . esc_attr($animation_type) . '" style="animation-delay:' . esc_attr($delay) . 's">' . esc_html($char) . '</span>';
-                    }
+                    $display_char = ($char === ' ') ? '&nbsp;' : esc_html($char);
+                    $style = ($is_scroll_reveal && !empty($initial_color)) ? ' style="color: ' . esc_attr($initial_color) . ';"' : '';
+                    $output .= '<span class="ata-split-char"' . $style . '>' . $display_char . '</span>';
                 }
             } elseif ($mode === 'words') {
                 $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
                 foreach ($words as $i => $word) {
                     if (trim($word) === '') {
                         $output .= $word;
-                    } else if ($animation_type === 'wave-text') {
-                        $style = $delay_s > 0 ? 'animation-duration:' . esc_attr($delay_s) . 's' : '';
-                        $output .= '<span class="' . esc_attr($animation_type) . '" style="' . $style . '">' . esc_html($word) . '</span>';
                     } else {
-                        $max_delay = $delay_s > 0 ? $delay_s : 1.0;
-                        $delay = number_format(mt_rand(0, 1000) / 1000 * $max_delay, 2);
-                        $output .= '<span class="' . esc_attr($animation_type) . '" style="animation-delay:' . esc_attr($delay) . 's">' . esc_html($word) . '</span>';
+                        $style = ($is_scroll_reveal && !empty($initial_color)) ? ' style="color: ' . esc_attr($initial_color) . ';"' : '';
+                        $output .= '<span class="ata-split-word"' . $style . '>' . esc_html($word) . '</span>';
                     }
                 }
             } elseif ($mode === 'lines') {
                 $lines = preg_split('/\r\n|\r|\n/', $text);
                 foreach ($lines as $i => $line) {
-                    $max_delay = $delay_s > 0 ? $delay_s : 1.0;
-                    $delay = number_format(mt_rand(0, 1000) / 1000 * $max_delay, 2);
-                    $output .= '<div class="' . esc_attr($animation_type) . '" style="animation-delay:' . esc_attr($delay) . 's">' . esc_html($line) . '</div>';
+                    $style = ($is_scroll_reveal && !empty($initial_color)) ? ' style="color: ' . esc_attr($initial_color) . ';"' : '';
+                    $output .= '<div class="ata-split-line"' . $style . '>' . esc_html($line) . '</div>';
                 }
             }
         } else {
-            // For GSAP, output only the raw text (no splitting)
+            // For GSAP (other types), output only the raw text (no splitting)
             $output = esc_html($text);
         }
         ?>

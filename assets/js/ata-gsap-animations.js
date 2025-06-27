@@ -57,6 +57,11 @@ if (typeof window.gsap === 'undefined' && typeof gsap !== 'undefined') {
         trySplit();
     }
 
+    // Register ScrollTrigger if available
+    if (window.gsap && window.gsap.registerPlugin && window.ScrollTrigger) {
+        window.gsap.registerPlugin(window.ScrollTrigger);
+    }
+
     function runGSAPAnimations() {
         var $targets = $('.ata-anim-gsap');
         $targets.each(function() {
@@ -86,218 +91,286 @@ if (typeof window.gsap === 'undefined' && typeof gsap !== 'undefined') {
                 splitType = animMode;
             }
             // Use visibility check and retry for SplitText
-            runSplitTextWithRetry($el, splitType, 10, 100, function(split) {
-                var targets = [];
-                if (splitType === 'chars') targets = split.chars;
-                else if (splitType === 'words') targets = split.words;
-                else if (splitType === 'lines') targets = split.lines;
-                else targets = [$el[0]];
-                // Read per-widget GSAP options from data attributes
-                var gsapStagger = $el.data('ata-anim-stagger') === 'yes';
-                var gsapYoyo = $el.data('ata-anim-yoyo') === 'yes';
-                var gsapRepeat = typeof $el.data('ata-anim-repeat') !== 'undefined' ? parseInt($el.data('ata-anim-repeat')) : -1;
+            // --- SCROLLTRIGGER WRAP ---
+            if (window.ScrollTrigger) {
+                ScrollTrigger.create({
+                    trigger: $el[0],
+                    start: 'top 90%',
+                    once: false,
+                    onEnter: function() {
+                        runSplitTextWithRetry($el, splitType, 10, 100, function(split) {
+                            ataRunGSAPAnimationType($el, split, animType, animMode);
+                        });
+                    },
+                    onEnterBack: function() {
+                        runSplitTextWithRetry($el, splitType, 10, 100, function(split) {
+                            ataRunGSAPAnimationType($el, split, animType, animMode);
+                        });
+                    },
+                    onLeave: function() {
+                        // Optionally revert or pause animation here
+                    }
+                });
+            } else {
+                runSplitTextWithRetry($el, splitType, 10, 100, function(split) {
+                    ataRunGSAPAnimationType($el, split, animType, animMode);
+                });
+            }
+        });
+    }
 
-                // Only use these options for supported animation types
-                var useGsapOpts = [
-                    'infinite-bounce', 'infinite-wave', 'rotate', 'pulse', 'glitch', 'shake', 'sliding-entrance'
-                ];
-                var gsapOpts = {};
-                if (useGsapOpts.includes(animType)) {
-                    gsapOpts = {
+    // Extracted animation logic for ScrollTrigger
+    function ataRunGSAPAnimationType($el, split, animType, animMode) {
+        var targets = [];
+        var splitType = (animMode === 'character') ? 'chars' : (animMode === 'words') ? 'words' : (animMode === 'lines') ? 'lines' : animMode;
+        if (splitType === 'chars') targets = split.chars;
+        else if (splitType === 'words') targets = split.words;
+        else if (splitType === 'lines') targets = split.lines;
+        else targets = [$el[0]];
+        // Read per-widget GSAP options from data attributes
+        var gsapStagger = $el.data('ata-anim-stagger') === 'yes';
+        var gsapYoyo = $el.data('ata-anim-yoyo') === 'yes';
+        var gsapRepeat = typeof $el.data('ata-anim-repeat') !== 'undefined' ? parseInt($el.data('ata-anim-repeat')) : -1;
+
+        // Only use these options for supported animation types
+        var useGsapOpts = [
+            'infinite-bounce', 'infinite-wave', 'rotate', 'pulse', 'glitch', 'shake', 'sliding-entrance'
+        ];
+        var gsapOpts = {};
+        if (useGsapOpts.includes(animType)) {
+            gsapOpts = {
+                repeat: gsapRepeat,
+                yoyo: gsapYoyo,
+                stagger: gsapStagger ? 0.05 : 0,
+                delay: 0
+            };
+        }
+
+        switch (animType) {
+            case 'infinite-bounce':
+                gsap.to(targets, {
+                    y: -15,
+                    duration: 1,
+                    ...gsapOpts,
+                    ease: 'sine.inOut',
+                });
+                break;
+            case 'typewriter':
+                if (typeof TextPlugin !== 'undefined' && animMode === 'character') {
+                    gsap.to($el[0], {
+                        duration: 2,
+                        text: { value: $el.text(), delimiter: '' },
                         repeat: gsapRepeat,
+                        repeatDelay: 1,
                         yoyo: gsapYoyo,
-                        stagger: gsapStagger ? 0.05 : 0,
+                        ease: 'none',
                         delay: 0
-                    };
+                    });
                 }
-
-                switch (animType) {
-                    case 'infinite-bounce':
-                        gsap.to(targets, {
-                            y: -15,
-                            duration: 1,
-                            ...gsapOpts,
-                            ease: 'sine.inOut',
-                        });
-                        break;
-                    case 'typewriter':
-                        if (typeof TextPlugin !== 'undefined' && animMode === 'character') {
-                            gsap.to($el[0], {
-                                duration: 2,
-                                text: { value: $el.text(), delimiter: '' },
-                                repeat: gsapRepeat,
-                                repeatDelay: 1,
-                                yoyo: gsapYoyo,
-                                ease: 'none',
-                                delay: 0
-                            });
-                        }
-                        break;
-                    case 'infinite-wave':
-                        if (animMode === 'character' || animMode === 'words') {
-                            gsap.from(targets, {
-                                y: 20,
-                                duration: 0.5,
-                                ...gsapOpts,
-                                ease: 'sine.inOut',
-                            });
-                        }
-                        break;
-                    case 'scramble':
-                        if (typeof window.ScrambleTextPlugin !== 'undefined' && splitType === 'chars') {
-                            targets.forEach(function(target) {
-                                gsap.to(target, {
-                                    duration: 2,
-                                    scrambleText: { text: target.textContent, chars: '0123456789', revealDelay: 0.5 },
-                                    repeat: -1,
-                                    yoyo: true,
-                                    delay: 0
-                                });
-                            });
-                        } else if (typeof window.ScrambleTextPlugin !== 'undefined') {
-                            gsap.to($el[0], {
-                                duration: 2,
-                                scrambleText: { text: $el.text(), chars: '0123456789', revealDelay: 0.5 },
-                                repeat: -1,
-                                yoyo: true,
-                                delay: 0
-                            });
-                        }
-                        break;
-                    case 'rotate':
-                        if (animMode === 'character') {
-                            gsap.to(targets, {
-                                rotation: 360,
-                                duration: 2,
-                                repeat: gsapRepeat,
-                                yoyo: gsapYoyo,
-                                transformOrigin: '50% 50%',
-                                ease: 'none',
-                                stagger: gsapStagger ? 0.05 : 0,
-                                delay: 0
-                            });
-                        }
-                        break;
-                    case 'pulse':
-                        gsap.to(targets, {
-                            scale: 1.1,
-                            duration: 1,
-                            ...gsapOpts,
-                            ease: 'sine.inOut',
-                        });
-                        break;
-                    case 'glitch':
-                        gsap.to(targets, {
-                            x: function() { return Math.random() * 5 - 2.5; },
-                            y: function() { return Math.random() * 5 - 2.5; },
-                            duration: 0.1,
-                            repeat: gsapRepeat,
-                            yoyo: gsapYoyo,
-                            ease: 'none',
-                            stagger: gsapStagger ? 0.05 : 0,
+                break;
+            case 'infinite-wave':
+                if (animMode === 'character' || animMode === 'words') {
+                    gsap.from(targets, {
+                        y: 20,
+                        duration: 0.5,
+                        ...gsapOpts,
+                        ease: 'sine.inOut',
+                    });
+                }
+                break;
+            case 'scramble':
+                if (typeof window.ScrambleTextPlugin !== 'undefined' && splitType === 'chars') {
+                    targets.forEach(function(target) {
+                        gsap.to(target, {
+                            duration: 2,
+                            scrambleText: { text: target.textContent, chars: '0123456789', revealDelay: 0.5 },
+                            repeat: -1,
+                            yoyo: true,
                             delay: 0
                         });
-                        break;
-                    case 'rainbow':
-                        // Use a single GSAP ticker for all targets for synchronized color cycling
-                        var baseHue = 0;
-                        var phaseStep = 360 / targets.length;
-                        if (!window._ataRainbowTicker) {
-                            window._ataRainbowTicker = true;
-                            gsap.ticker.add(function() {
-                                baseHue = (baseHue + 1) % 360;
-                                $('.ata-anim-gsap[data-ata-anim-type="rainbow"]').each(function() {
-                                    var $rainbowEl = $(this);
-                                    var rainbowMode = $rainbowEl.data('ata-anim-mode');
-                                    var rainbowSplitType = (rainbowMode === 'character') ? 'chars' : rainbowMode;
-                                    // Only split once per element, cache result
-                                    if (!$rainbowEl.data('ata-rainbow-split')) {
-                                        $rainbowEl.data('ata-rainbow-split', new SplitText($rainbowEl[0], { type: rainbowSplitType }));
-                                    }
-                                    var rainbowSplit = $rainbowEl.data('ata-rainbow-split');
-                                    var rainbowTargets = (rainbowSplitType === 'chars') ? rainbowSplit.chars : (rainbowSplitType === 'words') ? rainbowSplit.words : (rainbowSplitType === 'lines') ? rainbowSplit.lines : [$rainbowEl[0]];
-                                    var localPhaseStep = 360 / rainbowTargets.length;
-                                    rainbowTargets.forEach(function(target, i) {
-                                        var phase = (i * localPhaseStep);
-                                        target.style.color = 'hsl(' + ((baseHue + phase) % 360) + ', 100%, 50%)';
-                                    });
-                                });
-                            });
-                        }
-                        break;
-                    case 'shake':
-                        if (animMode === 'character' || animMode === 'words') {
-                            gsap.to(targets, {
-                                x: function() { return Math.random() * 10 - 5; },
-                                duration: 0.2,
-                                ...gsapOpts,
-                                ease: 'sine.inOut',
-                            });
-                        }
-                        break;
-                    case 'sliding-entrance':
-                        gsap.to(targets, {
-                            x: 100,
-                            opacity: 0,
-                            duration: 1,
-                            ...gsapOpts,
-                            ease: 'sine.inOut',
-                        });
-                        break;
-                    case 'reveal-gsap':
-                        // GSAP text reveal animation inspired by CodePen
-                        var revealTargets = targets;
-                        // Get background color from Elementor settings
-                        var bgColor = $el.data('reveal-bg-color') || '#353535';
-                        // Add background spans for the reveal effect
-                        revealTargets.forEach(function(target) {
-                            if (!target.classList.contains('ata-reveal-word')) {
-                                var wordSpan = document.createElement('span');
-                                wordSpan.className = 'ata-reveal-word';
-                                wordSpan.style.position = 'relative';
-                                wordSpan.style.display = 'inline-block';
-                                wordSpan.style.overflow = 'hidden';
-                                wordSpan.style.verticalAlign = 'bottom';
-                                wordSpan.textContent = target.textContent;
-                                target.textContent = '';
-                                target.appendChild(wordSpan);
-                                var bgSpan = document.createElement('span');
-                                bgSpan.className = 'ata-reveal-bg';
-                                bgSpan.style.position = 'absolute';
-                                bgSpan.style.left = 0;
-                                bgSpan.style.top = 0;
-                                bgSpan.style.width = '100%';
-                                bgSpan.style.height = '100%';
-                                bgSpan.style.background = bgColor;
-                                bgSpan.style.transform = 'scaleX(0)';
-                                bgSpan.style.transformOrigin = 'left';
-                                bgSpan.style.zIndex = 2;
-                                wordSpan.appendChild(bgSpan);
-                            }
-                        });
-                        var wordSpans = $el.find('.ata-reveal-word');
-                        var bgSpans = $el.find('.ata-reveal-bg');
-                        var repeatCount = typeof $el.data('ata-anim-repeat') !== 'undefined' ? parseInt($el.data('ata-anim-repeat')) : 0;
-                        function playRevealTimeline() {
-                            var tl = gsap.timeline({
-                                onComplete: function() {
-                                    if (repeatCount === -1 || repeatCount > 1) {
-                                        if (repeatCount > 1) repeatCount--;
-                                        setTimeout(playRevealTimeline, 500);
-                                    }
-                                }
-                            });
-                            tl.set(wordSpans, { opacity: 0 });
-                            tl.set(bgSpans, { scaleX: 0, transformOrigin: 'left' });
-                            tl.to(bgSpans, { scaleX: 1, duration: 0.2, stagger: 0.1, transformOrigin: 'left', ease: 'power1.in' })
-                              .to(wordSpans, { opacity: 1, duration: 0.1, stagger: 0.1 }, '-=0.1')
-                              .to(bgSpans, { scaleX: 0, duration: 0.2, stagger: 0.1, transformOrigin: 'right', ease: 'power1.out' });
-                        }
-                        playRevealTimeline();
-                        break;
+                    });
+                } else if (typeof window.ScrambleTextPlugin !== 'undefined') {
+                    gsap.to($el[0], {
+                        duration: 2,
+                        scrambleText: { text: $el.text(), chars: '0123456789', revealDelay: 0.5 },
+                        repeat: -1,
+                        yoyo: true,
+                        delay: 0
+                    });
                 }
-            });
-        });
+                break;
+            case 'rotate':
+                if (animMode === 'character') {
+                    gsap.to(targets, {
+                        rotation: 360,
+                        duration: 2,
+                        repeat: gsapRepeat,
+                        yoyo: gsapYoyo,
+                        transformOrigin: '50% 50%',
+                        ease: 'none',
+                        stagger: gsapStagger ? 0.05 : 0,
+                        delay: 0
+                    });
+                }
+                break;
+            case 'pulse':
+                gsap.to(targets, {
+                    scale: 1.1,
+                    duration: 1,
+                    ...gsapOpts,
+                    ease: 'sine.inOut',
+                });
+                break;
+            case 'glitch':
+                gsap.to(targets, {
+                    x: function() { return Math.random() * 5 - 2.5; },
+                    y: function() { return Math.random() * 5 - 2.5; },
+                    duration: 0.1,
+                    repeat: gsapRepeat,
+                    yoyo: gsapYoyo,
+                    ease: 'none',
+                    stagger: gsapStagger ? 0.05 : 0,
+                    delay: 0
+                });
+                break;
+            case 'rainbow':
+                // Use a single GSAP ticker for all targets for synchronized color cycling
+                var baseHue = 0;
+                var phaseStep = 360 / targets.length;
+                if (!window._ataRainbowTicker) {
+                    window._ataRainbowTicker = true;
+                    gsap.ticker.add(function() {
+                        baseHue = (baseHue + 1) % 360;
+                        $('.ata-anim-gsap[data-ata-anim-type="rainbow"]').each(function() {
+                            var $rainbowEl = $(this);
+                            var rainbowMode = $rainbowEl.data('ata-anim-mode');
+                            var rainbowSplitType = (rainbowMode === 'character') ? 'chars' : rainbowMode;
+                            // Only split once per element, cache result
+                            if (!$rainbowEl.data('ata-rainbow-split')) {
+                                $rainbowEl.data('ata-rainbow-split', new SplitText($rainbowEl[0], { type: rainbowSplitType }));
+                            }
+                            var rainbowSplit = $rainbowEl.data('ata-rainbow-split');
+                            var rainbowTargets = (rainbowSplitType === 'chars') ? rainbowSplit.chars : (rainbowSplitType === 'words') ? rainbowSplit.words : (rainbowSplitType === 'lines') ? rainbowSplit.lines : [$rainbowEl[0]];
+                            var localPhaseStep = 360 / rainbowTargets.length;
+                            rainbowTargets.forEach(function(target, i) {
+                                var phase = (i * localPhaseStep);
+                                target.style.color = 'hsl(' + ((baseHue + phase) % 360) + ', 100%, 50%)';
+                            });
+                        });
+                    });
+                }
+                break;
+            case 'shake':
+                if (animMode === 'character' || animMode === 'words') {
+                    gsap.to(targets, {
+                        x: function() { return Math.random() * 10 - 5; },
+                        duration: 0.2,
+                        ...gsapOpts,
+                        ease: 'sine.inOut',
+                    });
+                }
+                break;
+            case 'sliding-entrance':
+                gsap.to(targets, {
+                    x: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ...gsapOpts,
+                    ease: 'sine.inOut',
+                });
+                break;
+            case 'reveal-gsap':
+                // GSAP text reveal animation inspired by CodePen
+                var revealTargets = targets;
+                // Get background color from Elementor settings
+                var bgColor = $el.data('reveal-bg-color') || '#353535';
+                // Add background spans for the reveal effect
+                revealTargets.forEach(function(target) {
+                    if (!target.classList.contains('ata-reveal-word')) {
+                        var wordSpan = document.createElement('span');
+                        wordSpan.className = 'ata-reveal-word';
+                        wordSpan.style.position = 'relative';
+                        wordSpan.style.display = 'inline-block';
+                        wordSpan.style.overflow = 'hidden';
+                        wordSpan.style.verticalAlign = 'bottom';
+                        wordSpan.textContent = target.textContent;
+                        target.textContent = '';
+                        target.appendChild(wordSpan);
+                        var bgSpan = document.createElement('span');
+                        bgSpan.className = 'ata-reveal-bg';
+                        bgSpan.style.position = 'absolute';
+                        bgSpan.style.left = 0;
+                        bgSpan.style.top = 0;
+                        bgSpan.style.width = '100%';
+                        bgSpan.style.height = '100%';
+                        bgSpan.style.background = bgColor;
+                        bgSpan.style.transform = 'scaleX(0)';
+                        bgSpan.style.transformOrigin = 'left';
+                        bgSpan.style.zIndex = 2;
+                        wordSpan.appendChild(bgSpan);
+                    }
+                });
+                var wordSpans = $el.find('.ata-reveal-word');
+                var bgSpans = $el.find('.ata-reveal-bg');
+                var repeatCount = typeof $el.data('ata-anim-repeat') !== 'undefined' ? parseInt($el.data('ata-anim-repeat')) : 0;
+                function playRevealTimeline() {
+                    var tl = gsap.timeline({
+                        onComplete: function() {
+                            if (repeatCount === -1 || repeatCount > 1) {
+                                if (repeatCount > 1) repeatCount--;
+                                setTimeout(playRevealTimeline, 500);
+                            }
+                        }
+                    });
+                    tl.set(wordSpans, { opacity: 0 });
+                    tl.set(bgSpans, { scaleX: 0, transformOrigin: 'left' });
+                    tl.to(bgSpans, { scaleX: 1, duration: 0.2, stagger: 0.1, transformOrigin: 'left', ease: 'power1.in' })
+                      .to(wordSpans, { opacity: 1, duration: 0.1, stagger: 0.1 }, '-=0.1')
+                      .to(bgSpans, { scaleX: 0, duration: 0.2, stagger: 0.1, transformOrigin: 'right', ease: 'power1.out' });
+                }
+                playRevealTimeline();
+                break;
+            case 'scroll-reveal':
+                // Scroll-triggered text color reveal (fade from initial color to text color)
+                var splitTargets = $el.find('.ata-split-char, .ata-split-word, .ata-split-line').toArray();
+                var startColor = $el.data('scroll-reveal-initial-color') || '#aaa';
+                var endColor = $el.data('scroll-reveal-text-color') || '#222';
+                if (!startColor) startColor = '#aaa';
+                if (!endColor) endColor = '#222';
+                // Animate each target's color as it scrolls into view, and reset on scroll out
+                splitTargets.forEach(function(target) {
+                    ScrollTrigger.create({
+                        trigger: target,
+                        start: 'top 30%',
+                        onEnter: function() {
+                            // Always reset to initial color before animating
+                            gsap.set(target, { color: startColor });
+                            gsap.to(target, {
+                                color: endColor,
+                                duration: 1,
+                                ease: 'power2.out',
+                                overwrite: 'auto'
+                            });
+                        },
+                        onEnterBack: function() {
+                            // Reset and animate again when scrolling back up
+                            gsap.set(target, { color: startColor });
+                            gsap.to(target, {
+                                color: endColor,
+                                duration: 1,
+                                ease: 'power2.out',
+                                overwrite: 'auto'
+                            });
+                        },
+                        onLeave: function() {
+                            // Optionally reset color when leaving viewport (optional)
+                            // gsap.set(target, { color: startColor });
+                        },
+                        once: false
+                    });
+                });
+                break;
+        }
     }
 
     // Debug: Log GSAP and ScrambleTextPlugin presence
