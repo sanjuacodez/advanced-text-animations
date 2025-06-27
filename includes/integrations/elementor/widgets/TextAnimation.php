@@ -90,6 +90,7 @@ class TextAnimation extends Widget_Base {
                 ],
                 'default' => 'css',
                 'toggle' => false,
+                'description' => '<span class="ata-gsap-preview-msg" style="display:none;color:#e67e22;font-size:13px;">' . __('GSAP animation preview is not available in the editor. Please check the frontend for the live animation.', 'advanced-text-animations') . '</span>',
             ]
         );
 
@@ -180,6 +181,19 @@ class TextAnimation extends Widget_Base {
             ]
         );
         $this->add_control(
+            'reveal_bg_color',
+            [
+                'label' => __('Reveal Background Color', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#353535',
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    'animation_mode' => 'character',
+                    'animation_type_gsap_character' => 'reveal-gsap',
+                ],
+            ]
+        );
+        $this->add_control(
             'animation_type_gsap_words',
             [
                 'label' => __('Animation Type', 'advanced-text-animations'),
@@ -194,6 +208,19 @@ class TextAnimation extends Widget_Base {
             ]
         );
         $this->add_control(
+            'reveal_bg_color_words',
+            [
+                'label' => __('Reveal Background Color', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#353535',
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    'animation_mode' => 'words',
+                    'animation_type_gsap_words' => 'reveal-gsap',
+                ],
+            ]
+        );
+        $this->add_control(
             'animation_type_gsap_lines',
             [
                 'label' => __('Animation Type', 'advanced-text-animations'),
@@ -205,6 +232,19 @@ class TextAnimation extends Widget_Base {
                     'animation_mode' => 'lines',
                 ],
                 'description' => '<span class="ata-anim-desc"></span>',
+            ]
+        );
+        $this->add_control(
+            'reveal_bg_color_lines',
+            [
+                'label' => __('Reveal Background Color', 'advanced-text-animations'),
+                'type' => Controls_Manager::COLOR,
+                'default' => '#353535',
+                'condition' => [
+                    'animation_engine' => 'gsap',
+                    'animation_mode' => 'lines',
+                    'animation_type_gsap_lines' => 'reveal-gsap',
+                ],
             ]
         );
 
@@ -299,6 +339,7 @@ class TextAnimation extends Widget_Base {
                     'shake-text' => __('Characters/words shake side to side, as if vibrating.', 'advanced-text-animations'),
                     'slide-text' => __('Characters/words/lines slide in and out from the left, fading as they go.', 'advanced-text-animations'),
                     'blink-text' => __('Characters/words/lines blink on and off, like a cursor.', 'advanced-text-animations'),
+                    'reveal-gsap' => __('Text reveal effect inspired by GSAP CodePen demo.', 'advanced-text-animations'),
                 ]),
             ]
         );
@@ -474,6 +515,7 @@ class TextAnimation extends Widget_Base {
                 'rainbow' => __('Rainbow Color Cycle', 'advanced-text-animations'),
                 'shake' => __('Shake', 'advanced-text-animations'),
                 'sliding-entrance' => __('Sliding Entrance', 'advanced-text-animations'),
+                'reveal-gsap' => __('Text Reveal', 'advanced-text-animations'),
             ],
             'words' => [
                 'infinite-bounce' => __('Infinite Bounce', 'advanced-text-animations'),
@@ -483,6 +525,7 @@ class TextAnimation extends Widget_Base {
                 'rainbow' => __('Rainbow Color Cycle', 'advanced-text-animations'),
                 'shake' => __('Shake', 'advanced-text-animations'),
                 'sliding-entrance' => __('Sliding Entrance', 'advanced-text-animations'),
+                'reveal-gsap' => __('Text Reveal', 'advanced-text-animations'),
             ],
             'lines' => [
                 'infinite-bounce' => __('Infinite Bounce', 'advanced-text-animations'),
@@ -490,6 +533,7 @@ class TextAnimation extends Widget_Base {
                 'glitch' => __('Glitch Effect', 'advanced-text-animations'),
                 'rainbow' => __('Rainbow Color Cycle', 'advanced-text-animations'),
                 'sliding-entrance' => __('Sliding Entrance', 'advanced-text-animations'),
+                'reveal-gsap' => __('Text Reveal', 'advanced-text-animations'),
             ],
         ];
         return $options[$mode] ?? [];
@@ -507,6 +551,7 @@ class TextAnimation extends Widget_Base {
             'shake-text' => __('Characters/words shake side to side, as if vibrating.', 'advanced-text-animations'),
             'slide-text' => __('Characters/words/lines slide in and out from the left, fading as they go.', 'advanced-text-animations'),
             'blink-text' => __('Characters/words/lines blink on and off, like a cursor.', 'advanced-text-animations'),
+            'reveal-gsap' => __('Text reveal effect inspired by GSAP CodePen demo.', 'advanced-text-animations'),
         ];
         return $descriptions[$type] ?? '';
     }
@@ -533,6 +578,11 @@ class TextAnimation extends Widget_Base {
             'data-ata-anim-stagger' => $settings['gsap_stagger'] ?? 'yes',
             'data-ata-anim-yoyo' => $settings['gsap_yoyo'] ?? 'yes',
             'data-ata-anim-repeat' => isset($settings['gsap_repeat']) ? $settings['gsap_repeat'] : -1,
+            'data-reveal-bg-color' => (
+                $engine === 'gsap' && $mode === 'character' && !empty($settings['reveal_bg_color']) ? $settings['reveal_bg_color'] :
+                ($engine === 'gsap' && $mode === 'words' && !empty($settings['reveal_bg_color_words']) ? $settings['reveal_bg_color_words'] :
+                ($engine === 'gsap' && $mode === 'lines' && !empty($settings['reveal_bg_color_lines']) ? $settings['reveal_bg_color_lines'] : ''))
+            ),
         ]);
         $text = $settings['text'];
         $output = '';
@@ -572,7 +622,8 @@ class TextAnimation extends Widget_Base {
                 }
             }
         } else {
-            $output = wp_kses_post($text);
+            // For GSAP, output only the raw text (no splitting)
+            $output = esc_html($text);
         }
         ?>
         <<?php echo esc_attr($tag); ?> <?php echo $this->get_render_attribute_string('wrapper'); ?>>
@@ -613,4 +664,23 @@ add_action('wp_footer', function() {
     if (is_admin()) {
         wp_enqueue_script('ata-anim-desc', ATA_URL . 'assets/js/elementor-anim-desc.js', ['jquery'], ATA_VERSION, true);
     }
+});
+// Add JS to toggle GSAP preview message visibility in the editor
+add_action('elementor/editor/after_enqueue_scripts', function() {
+    ?>
+    <script>
+    jQuery(document).on('change', '[data-setting="animation_engine"]', function() {
+        var val = jQuery(this).val();
+        var msg = jQuery(this).closest('.elementor-control-content').find('.ata-gsap-preview-msg');
+        if (val === 'gsap') {
+            msg.show();
+        } else {
+            msg.hide();
+        }
+    });
+    jQuery(function(){
+        jQuery('[data-setting="animation_engine"]').trigger('change');
+    });
+    </script>
+    <?php
 });

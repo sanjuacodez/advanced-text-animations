@@ -1,3 +1,8 @@
+// Ensure GSAP is available globally
+if (typeof window.gsap === 'undefined' && typeof gsap !== 'undefined') {
+    window.gsap = gsap;
+}
+
 // GSAP-based animations
 (function($) {
     'use strict';
@@ -5,66 +10,70 @@
     // Helper: Load GSAP and plugins if not already loaded
     function gsapReady(callback) {
         if (typeof window.gsap === 'undefined') {
-            console.warn('[Advanced Text Animations] GSAP (gsap.min.js) is missing or not loaded!');
+            console.error('[ATA] GSAP is not loaded!');
             return;
         }
         if (typeof window.SplitText === 'undefined') {
-            console.warn('[Advanced Text Animations] GSAP SplitText plugin (SplitText.min.js) is missing or not loaded!');
+            console.error('[ATA] SplitText is not loaded!');
             return;
         }
         callback();
     }
 
-    function runGSAPAnimations() {
-        var $targets = $('.ata-anim-gsap');
-        console.log('[ATA] Found', $targets.length, '.ata-anim-gsap elements');
-        $targets.each(function(i, el) {
-            console.log('[ATA] Element', i, el.outerHTML);
-        });
-        function runSplitTextWithRetry($el, splitType, maxRetries = 10, delay = 100, onSplit) {
-            let attempt = 0;
-            function trySplit() {
-                // Log text content and childNodes before splitting
-                console.log('[ATA] Before SplitText:', {
-                    textContent: $el[0].textContent,
-                    childNodes: $el[0].childNodes,
-                    outerHTML: $el[0].outerHTML
-                });
-                // Force visible
-                $el.css({display: 'block', visibility: 'visible', opacity: 1});
-                if ($el.is(':visible') && $el[0].offsetParent !== null) {
-                    try {
-                        var split = new SplitText($el[0], { type: splitType, tag: 'span' });
-                        $el.data('ata-split', split);
-                        console.log('[ATA] SplitText created:', splitType, split, $el[0]);
-                        if (onSplit) onSplit(split);
-                    } catch (e) {
-                        console.error('[ATA] SplitText error:', e, $el[0]);
-                    }
-                } else if (attempt < maxRetries) {
-                    attempt++;
+    // Utility: Show GSAP preview message in Elementor editor/preview
+    function ataShowGSAPPreviewMessage($el) {
+        if (!$el.find('.ata-gsap-preview-msg').length) {
+            $el.append('<div class="ata-gsap-preview-msg" style="color:#c00;font-size:13px;margin-top:8px;">GSAP animation preview is not available in the editor. Please check the frontend for the live animation.</div>');
+        }
+    }
+
+    // Utility: Robust SplitText with retries and visibility check
+    function runSplitTextWithRetry($el, splitType, maxRetries, delay, callback) {
+        var retries = 0;
+        function isVisible(el) {
+            return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+        }
+        function trySplit() {
+            if (!isVisible($el[0])) {
+                if (retries < maxRetries) {
+                    retries++;
                     setTimeout(trySplit, delay);
-                } else {
-                    console.warn('[ATA] SplitText: Element never became visible:', $el[0]);
+                }
+                return;
+            }
+            try {
+                var splitOptions = { type: splitType };
+                if (splitType === 'chars') splitOptions.tag = 'span';
+                var split = new SplitText($el[0], splitOptions);
+                $el.data('ata-split', split);
+                callback(split);
+            } catch (e) {
+                if (retries < maxRetries) {
+                    retries++;
+                    setTimeout(trySplit, delay);
                 }
             }
-            trySplit();
         }
+        trySplit();
+    }
 
+    function runGSAPAnimations() {
+        var $targets = $('.ata-anim-gsap');
         $targets.each(function() {
             var $el = $(this);
             // Clean up previous SplitText splits if any
             if ($el.data('ata-split')) {
-                try {
-                    $el.data('ata-split').revert();
-                } catch (e) {
-                    console.warn('[ATA] Error reverting previous SplitText:', e);
-                }
+                try { $el.data('ata-split').revert(); } catch (e) {}
                 $el.removeData('ata-split');
             }
             var animType = $el.data('ata-anim-type');
             var animMode = $el.data('ata-anim-mode');
-            var animDelay = parseFloat($el.data('ata-anim-delay')) || 0.1;
+            var animEngine = $el.data('engine') || $el.data('ata-anim-engine');
+            // If in Elementor editor/preview and GSAP is selected, show message and skip animation
+            if (window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode() && animEngine === 'gsap') {
+                ataShowGSAPPreviewMessage($el);
+                return;
+            }
             // Map animation mode to SplitText type and target
             var splitType = '';
             if (animMode === 'character') {
@@ -83,7 +92,6 @@
                 else if (splitType === 'words') targets = split.words;
                 else if (splitType === 'lines') targets = split.lines;
                 else targets = [$el[0]];
-                console.log('[ATA] SplitText targets:', targets.length, targets);
                 // Read per-widget GSAP options from data attributes
                 var gsapStagger = $el.data('ata-anim-stagger') === 'yes';
                 var gsapYoyo = $el.data('ata-anim-yoyo') === 'yes';
@@ -98,7 +106,7 @@
                     gsapOpts = {
                         repeat: gsapRepeat,
                         yoyo: gsapYoyo,
-                        stagger: gsapStagger ? animDelay : 0,
+                        stagger: gsapStagger ? 0.05 : 0,
                         delay: 0
                     };
                 }
@@ -121,7 +129,7 @@
                                 repeatDelay: 1,
                                 yoyo: gsapYoyo,
                                 ease: 'none',
-                                delay: animDelay
+                                delay: 0
                             });
                         }
                         break;
@@ -143,7 +151,7 @@
                                     scrambleText: { text: target.textContent, chars: '0123456789', revealDelay: 0.5 },
                                     repeat: -1,
                                     yoyo: true,
-                                    delay: animDelay
+                                    delay: 0
                                 });
                             });
                         } else if (typeof window.ScrambleTextPlugin !== 'undefined') {
@@ -152,7 +160,7 @@
                                 scrambleText: { text: $el.text(), chars: '0123456789', revealDelay: 0.5 },
                                 repeat: -1,
                                 yoyo: true,
-                                delay: animDelay
+                                delay: 0
                             });
                         }
                         break;
@@ -161,8 +169,12 @@
                             gsap.to(targets, {
                                 rotation: 360,
                                 duration: 2,
-                                ...gsapOpts,
+                                repeat: gsapRepeat,
+                                yoyo: gsapYoyo,
+                                transformOrigin: '50% 50%',
                                 ease: 'none',
+                                stagger: gsapStagger ? 0.05 : 0,
+                                delay: 0
                             });
                         }
                         break;
@@ -182,7 +194,7 @@
                             repeat: gsapRepeat,
                             yoyo: gsapYoyo,
                             ease: 'none',
-                            stagger: gsapStagger ? animDelay : 0,
+                            stagger: gsapStagger ? 0.05 : 0,
                             delay: 0
                         });
                         break;
@@ -206,7 +218,7 @@
                                     var rainbowTargets = (rainbowSplitType === 'chars') ? rainbowSplit.chars : (rainbowSplitType === 'words') ? rainbowSplit.words : (rainbowSplitType === 'lines') ? rainbowSplit.lines : [$rainbowEl[0]];
                                     var localPhaseStep = 360 / rainbowTargets.length;
                                     rainbowTargets.forEach(function(target, i) {
-                                        var phase = (i * localPhaseStep) + (parseFloat($rainbowEl.data('ata-anim-delay')) || 0) * 360;
+                                        var phase = (i * localPhaseStep);
                                         target.style.color = 'hsl(' + ((baseHue + phase) % 360) + ', 100%, 50%)';
                                     });
                                 });
@@ -231,6 +243,57 @@
                             ...gsapOpts,
                             ease: 'sine.inOut',
                         });
+                        break;
+                    case 'reveal-gsap':
+                        // GSAP text reveal animation inspired by CodePen
+                        var revealTargets = targets;
+                        // Get background color from Elementor settings
+                        var bgColor = $el.data('reveal-bg-color') || '#353535';
+                        // Add background spans for the reveal effect
+                        revealTargets.forEach(function(target) {
+                            if (!target.classList.contains('ata-reveal-word')) {
+                                var wordSpan = document.createElement('span');
+                                wordSpan.className = 'ata-reveal-word';
+                                wordSpan.style.position = 'relative';
+                                wordSpan.style.display = 'inline-block';
+                                wordSpan.style.overflow = 'hidden';
+                                wordSpan.style.verticalAlign = 'bottom';
+                                wordSpan.textContent = target.textContent;
+                                target.textContent = '';
+                                target.appendChild(wordSpan);
+                                var bgSpan = document.createElement('span');
+                                bgSpan.className = 'ata-reveal-bg';
+                                bgSpan.style.position = 'absolute';
+                                bgSpan.style.left = 0;
+                                bgSpan.style.top = 0;
+                                bgSpan.style.width = '100%';
+                                bgSpan.style.height = '100%';
+                                bgSpan.style.background = bgColor;
+                                bgSpan.style.transform = 'scaleX(0)';
+                                bgSpan.style.transformOrigin = 'left';
+                                bgSpan.style.zIndex = 2;
+                                wordSpan.appendChild(bgSpan);
+                            }
+                        });
+                        var wordSpans = $el.find('.ata-reveal-word');
+                        var bgSpans = $el.find('.ata-reveal-bg');
+                        var repeatCount = typeof $el.data('ata-anim-repeat') !== 'undefined' ? parseInt($el.data('ata-anim-repeat')) : 0;
+                        function playRevealTimeline() {
+                            var tl = gsap.timeline({
+                                onComplete: function() {
+                                    if (repeatCount === -1 || repeatCount > 1) {
+                                        if (repeatCount > 1) repeatCount--;
+                                        setTimeout(playRevealTimeline, 500);
+                                    }
+                                }
+                            });
+                            tl.set(wordSpans, { opacity: 0 });
+                            tl.set(bgSpans, { scaleX: 0, transformOrigin: 'left' });
+                            tl.to(bgSpans, { scaleX: 1, duration: 0.2, stagger: 0.1, transformOrigin: 'left', ease: 'power1.in' })
+                              .to(wordSpans, { opacity: 1, duration: 0.1, stagger: 0.1 }, '-=0.1')
+                              .to(bgSpans, { scaleX: 0, duration: 0.2, stagger: 0.1, transformOrigin: 'right', ease: 'power1.out' });
+                        }
+                        playRevealTimeline();
                         break;
                 }
             });
@@ -258,42 +321,57 @@
         console.log('[ATA] Animation JS running in Elementor editor/preview context');
     }
 
-    // Elementor integration: ensure GSAP animations run after every widget render (frontend & editor)
+    // Elementor integration: robust hooks for editor/preview
     function ataInitElementorHooks() {
-        // Run on every widget render (frontend & editor)
         if (window.elementorFrontend && window.elementorFrontend.hooks) {
-            // For all widgets (global)
+            // Global hook for all widgets
             window.elementorFrontend.hooks.addAction('frontend/element_ready/global', function(scope, $scope){
-                gsapReady(runGSAPAnimations);
+                setTimeout(function() {
+                    gsapReady(runGSAPAnimations);
+                }, 50);
             });
-            // For this specific widget (if you have a unique widget name, e.g., 'advanced-text-animations')
+            // Widget-specific hook (replace with your widget name if different)
             window.elementorFrontend.hooks.addAction('frontend/element_ready/advanced-text-animations.default', function(scope, $scope){
-                gsapReady(runGSAPAnimations);
+                setTimeout(function() {
+                    gsapReady(runGSAPAnimations);
+                }, 50);
+            });
+            // Also handle popups and dynamic content
+            window.elementorFrontend.hooks.addAction('elementor/popup/show', function(){
+                setTimeout(function() {
+                    gsapReady(runGSAPAnimations);
+                }, 50);
+            });
+            window.elementorFrontend.hooks.addAction('elementor/popup/hide', function(){
+                setTimeout(function() {
+                    gsapReady(runGSAPAnimations);
+                }, 50);
             });
         }
     }
 
-    // Run on frontend and in Elementor editor/preview
+    // Ensure hooks are initialized in all contexts
     if (window.elementorFrontend) {
-        if (window.elementorFrontend.isEditMode()) {
-            // In Elementor editor/preview, wait for init
+        if (window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode()) {
             jQuery(window).on('elementor/frontend/init', function() {
                 ataInitElementorHooks();
-                // Also run once in case widgets are already present
-                gsapReady(runGSAPAnimations);
+                setTimeout(function() {
+                    gsapReady(runGSAPAnimations);
+                }, 50);
             });
         } else {
-            // On frontend, run hooks immediately
             ataInitElementorHooks();
-            // Also run once on DOM ready
             jQuery(function(){
-                gsapReady(runGSAPAnimations);
+                setTimeout(function() {
+                    gsapReady(runGSAPAnimations);
+                }, 50);
             });
         }
     } else {
-        // Fallback: run on DOM ready (non-Elementor context)
         jQuery(function(){
-            gsapReady(runGSAPAnimations);
+            setTimeout(function() {
+                gsapReady(runGSAPAnimations);
+            }, 50);
         });
     }
 
