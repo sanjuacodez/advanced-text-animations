@@ -23,3 +23,7 @@
 .ata-animated-text span {
     display: inline-block;
 }
+
+.ata-split-char,.ata-split-word {
+    min-width: 0.15em;
+}

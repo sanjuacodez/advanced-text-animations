@@ -331,43 +331,60 @@ if (typeof window.gsap === 'undefined' && typeof gsap !== 'undefined') {
                 playRevealTimeline();
                 break;
             case 'scroll-reveal':
-                // Scroll-triggered text color reveal (fade from initial color to text color)
-                var splitTargets = $el.find('.ata-split-char, .ata-split-word, .ata-split-line').toArray();
+                // Improved: Animate all chars/words together with stagger, yoyo, and delay from settings (repeat removed)
+                var chars = $el.find('.ata-split-char').toArray();
+                var words = $el.find('.ata-split-word').toArray();
+                var isCharMode = chars.length > 0;
+                var targets = isCharMode ? chars : words;
                 var startColor = $el.data('scroll-reveal-initial-color') || '#aaa';
                 var endColor = $el.data('scroll-reveal-text-color') || '#222';
-                if (!startColor) startColor = '#aaa';
-                if (!endColor) endColor = '#222';
-                // Animate each target's color as it scrolls into view, and reset on scroll out
-                splitTargets.forEach(function(target) {
-                    ScrollTrigger.create({
-                        trigger: target,
-                        start: 'top 30%',
-                        onEnter: function() {
-                            // Always reset to initial color before animating
-                            gsap.set(target, { color: startColor });
-                            gsap.to(target, {
-                                color: endColor,
-                                duration: 1,
+                var gsapStagger = $el.data('ata-anim-stagger') === 'yes';
+                var gsapYoyo = $el.data('ata-anim-yoyo') === 'yes';
+                var animDelay = $el.data('ata-anim-delay') || 0;
+                var duration = 1;
+                // Always reset all to initial color
+                gsap.set(targets, { color: startColor });
+                ScrollTrigger.create({
+                    trigger: $el[0],
+                    start: 'top 80%',
+                    once: false,
+                    onEnter: function() {
+                        gsap.to(targets, {
+                            color: endColor,
+                            duration: duration,
+                            delay: animDelay,
+                            stagger: gsapStagger ? 0.05 : 0,
+                            ease: 'power2.out',
+                            overwrite: 'auto',
+                            yoyo: false
+                        });
+                    },
+                    onEnterBack: function() {
+                        if (gsapYoyo) {
+                            gsap.to(targets, {
+                                color: startColor,
+                                duration: duration,
+                                delay: animDelay,
+                                stagger: gsapStagger ? 0.05 : 0,
                                 ease: 'power2.out',
-                                overwrite: 'auto'
+                                overwrite: 'auto',
+                                yoyo: true
                             });
-                        },
-                        onEnterBack: function() {
-                            // Reset and animate again when scrolling back up
-                            gsap.set(target, { color: startColor });
-                            gsap.to(target, {
+                        } else {
+                            gsap.to(targets, {
                                 color: endColor,
-                                duration: 1,
+                                duration: duration,
+                                delay: animDelay,
+                                stagger: gsapStagger ? 0.05 : 0,
                                 ease: 'power2.out',
-                                overwrite: 'auto'
+                                overwrite: 'auto',
+                                yoyo: false
                             });
-                        },
-                        onLeave: function() {
-                            // Optionally reset color when leaving viewport (optional)
-                            // gsap.set(target, { color: startColor });
-                        },
-                        once: false
-                    });
+                        }
+                    },
+                    onLeave: function() {
+                        // Optionally reset color when leaving viewport
+                    }
                 });
                 break;
         }
